@@ -1,7 +1,7 @@
-import { WPLATEST_ACTIONS } from './constants'
+import { WPUPDATEHUB_ACTIONS } from './constants'
 
 export type Maybe<T> = T | undefined | null
-export type WPLatestAction = (typeof WPLATEST_ACTIONS)[number]
+export type WPUpdateHubAction = (typeof WPUPDATEHUB_ACTIONS)[number]
 
 export type ApiOptions = {
   secret: string

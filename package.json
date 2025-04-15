@@ -1,19 +1,19 @@
 {
-  "name": "wplatest-action",
-  "description": "This action makes it easy to interact with the WPLatest API",
-  "version": "1.0.0",
+  "name": "wpupdatehub-action",
+  "description": "This action makes it easy to interact with the WPUpdateHub API",
+  "version": "2.0.0",
   "author": {
     "name": "Chris jayden",
     "url": "https://chrisjayden.com"
   },
   "private": true,
-  "homepage": "https://github.com/actions/wplatest-action",
+  "homepage": "https://github.com/actions/wpupdatehub-action",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/actions/wplatest-action.git"
+    "url": "git+https://github.com/actions/wpupdatehub-action.git"
   },
   "bugs": {
-    "url": "https://github.com/actions/wplatest-action/issues"
+    "url": "https://github.com/actions/wpupdatehub-action/issues"
   },
   "keywords": [
     "actions",

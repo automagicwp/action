@@ -1,5 +1,5 @@
 import * as core from '@actions/core'
-import { WPLATEST_ACTIONS } from './constants'
+import { WPUPDATEHUB_ACTIONS } from './constants'
 import type {
   ApiErrorResponse,
   CreateNewVersionInput,
@@ -16,32 +16,32 @@ export async function run(): Promise<void> {
     const {
       ARTIFACT_URL,
       GITHUB_TOKEN,
-      WPLATEST_SECRET,
-      WPLATEST_ACTION,
-      WPLATEST_PLUGIN_ID
+      WPUPDATEHUB_SECRET,
+      WPUPDATEHUB_ACTION,
+      WPUPDATEHUB_PLUGIN_ID
     } = getWorkflowInput()
 
-    if (!WPLATEST_ACTIONS.includes(WPLATEST_ACTION)) {
+    if (!WPUPDATEHUB_ACTIONS.includes(WPUPDATEHUB_ACTION)) {
       core.setFailed(
-        `Invalid action: ${WPLATEST_ACTION}. Must be one of: ${WPLATEST_ACTIONS.join(', ')}`
+        `Invalid action: ${WPUPDATEHUB_ACTION}. Must be one of: ${WPUPDATEHUB_ACTIONS.join(', ')}`
       )
       return
     }
 
-    if (WPLATEST_ACTION === 'create-new-version') {
-      core.info(`Creating new plugin version: ${WPLATEST_PLUGIN_ID}`)
+    if (WPUPDATEHUB_ACTION === 'create-new-version') {
+      core.info(`Creating new plugin version: ${WPUPDATEHUB_PLUGIN_ID}`)
       core.info(`Using artifact URL: ${ARTIFACT_URL}`)
 
       const config: CreateNewVersionInput = {
         zip_url: ARTIFACT_URL,
-        plugin_id: WPLATEST_PLUGIN_ID
+        plugin_id: WPUPDATEHUB_PLUGIN_ID
       }
 
       core.info(`Creating new version with config: ${JSON.stringify(config)}`)
 
       try {
         const response = await createNewVersion(config, {
-          secret: WPLATEST_SECRET
+          secret: WPUPDATEHUB_SECRET
         })
 
         core.info(`Response status: ${response.status}`)
@@ -50,7 +50,7 @@ export async function run(): Promise<void> {
           const data = (await response.json()) as ApiErrorResponse
 
           core.setFailed(
-            `Failed to create new version: ${data.message ?? 'No data returned from WPLatest API'}`
+            `Failed to create new version: ${data.message ?? 'No data returned from WPUpdateHub API'}`
           )
           return
         }
@@ -73,7 +73,7 @@ export async function run(): Promise<void> {
         core.setFailed(`Failed to create new version: ${msg}`)
       }
     } else {
-      core.setFailed(`${WPLATEST_ACTION} has not been implemented yet.`)
+      core.setFailed(`${WPUPDATEHUB_ACTION} has not been implemented yet.`)
     }
   } catch (error) {
     if (error instanceof Error) core.setFailed(error.message)

@@ -1,5 +1,5 @@
-name: 'WPLatest'
-description: 'This action makes it easy to interact with the WPLatest API.'
+name: 'WPUpdateHub'
+description: 'This action makes it easy to interact with the WPUpdateHub API.'
 author: 'Chris Jayden'
 
 branding:
@@ -7,27 +7,27 @@ branding:
   color: 'red'
 
 inputs:
-  'wplatest-secret':
-    description: 'WPLatest API token'
+  'wpupdatehub-secret':
+    description: 'WPUpdateHub API token'
     required: false
-  'wplatest-action':
-    description: 'WPLatest action'
+  'wpupdatehub-action':
+    description: 'WPUpdateHub action'
     required: true
-  'wplatest-plugin-id':
-    description: 'WPLatest plugin id'
+  'wpupdatehub-plugin-id':
+    description: 'WPUpdateHub plugin id'
     required: true
   'github-token':
     description: 'GitHub token'
     required: true
-  'wplatest-artifact-zip-url':
+  'wpupdatehub-artifact-zip-url':
     description: 'Url to the zip file'
     required: true
 
 outputs:
   version:
-    description: 'WPLatest new plugin version'
+    description: 'WPUpdateHub new plugin version'
   id:
-    description: 'WPLatest new plugin version id'
+    description: 'WPUpdateHub new plugin version id'
 
 runs:
   using: 'node20'
