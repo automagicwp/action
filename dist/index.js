@@ -24707,9 +24707,9 @@ exports["default"] = _default;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.WPLATEST_API_BASE = exports.WPLATEST_ACTIONS = void 0;
-exports.WPLATEST_ACTIONS = ['create-new-version'];
-exports.WPLATEST_API_BASE = 'https://wplatest.co/api/v1';
+exports.WPUPDATEHUB_API_BASE = exports.WPUPDATEHUB_ACTIONS = void 0;
+exports.WPUPDATEHUB_ACTIONS = ['create-new-version'];
+exports.WPUPDATEHUB_API_BASE = 'https://wpupdatehub.com/api/v1';
 
 
 /***/ }),
@@ -24753,27 +24753,27 @@ const utils_1 = __nccwpck_require__(442);
  */
 async function run() {
     try {
-        const { ARTIFACT_URL, GITHUB_TOKEN, WPLATEST_SECRET, WPLATEST_ACTION, WPLATEST_PLUGIN_ID } = (0, utils_1.getWorkflowInput)();
-        if (!constants_1.WPLATEST_ACTIONS.includes(WPLATEST_ACTION)) {
-            core.setFailed(`Invalid action: ${WPLATEST_ACTION}. Must be one of: ${constants_1.WPLATEST_ACTIONS.join(', ')}`);
+        const { ARTIFACT_URL, GITHUB_TOKEN, WPUPDATEHUB_SECRET, WPUPDATEHUB_ACTION, WPUPDATEHUB_PLUGIN_ID } = (0, utils_1.getWorkflowInput)();
+        if (!constants_1.WPUPDATEHUB_ACTIONS.includes(WPUPDATEHUB_ACTION)) {
+            core.setFailed(`Invalid action: ${WPUPDATEHUB_ACTION}. Must be one of: ${constants_1.WPUPDATEHUB_ACTIONS.join(', ')}`);
             return;
         }
-        if (WPLATEST_ACTION === 'create-new-version') {
-            core.info(`Creating new plugin version: ${WPLATEST_PLUGIN_ID}`);
+        if (WPUPDATEHUB_ACTION === 'create-new-version') {
+            core.info(`Creating new plugin version: ${WPUPDATEHUB_PLUGIN_ID}`);
             core.info(`Using artifact URL: ${ARTIFACT_URL}`);
             const config = {
                 zip_url: ARTIFACT_URL,
-                plugin_id: WPLATEST_PLUGIN_ID
+                plugin_id: WPUPDATEHUB_PLUGIN_ID
             };
             core.info(`Creating new version with config: ${JSON.stringify(config)}`);
             try {
                 const response = await (0, utils_1.createNewVersion)(config, {
-                    secret: WPLATEST_SECRET
+                    secret: WPUPDATEHUB_SECRET
                 });
                 core.info(`Response status: ${response.status}`);
                 if (!response.ok) {
                     const data = (await response.json());
-                    core.setFailed(`Failed to create new version: ${data.message ?? 'No data returned from WPLatest API'}`);
+                    core.setFailed(`Failed to create new version: ${data.message ?? 'No data returned from WPUpdateHub API'}`);
                     return;
                 }
                 const data = (await response.json());
@@ -24793,7 +24793,7 @@ async function run() {
             }
         }
         else {
-            core.setFailed(`${WPLATEST_ACTION} has not been implemented yet.`);
+            core.setFailed(`${WPUPDATEHUB_ACTION} has not been implemented yet.`);
         }
     }
     catch (error) {
@@ -24817,16 +24817,16 @@ const core_1 = __nccwpck_require__(9093);
 const constants_1 = __nccwpck_require__(8926);
 const getWorkflowInput = () => {
     const GITHUB_TOKEN = (0, core_1.getInput)('github-token');
-    const WPLATEST_SECRET = (0, core_1.getInput)('wplatest-secret', { required: true });
-    const WPLATEST_ACTION = (0, core_1.getInput)('wplatest-action');
-    const WPLATEST_PLUGIN_ID = (0, core_1.getInput)('wplatest-plugin-id');
-    const ARTIFACT_URL = (0, core_1.getInput)('wplatest-artifact-zip-url');
+    const WPUPDATEHUB_SECRET = (0, core_1.getInput)('wpupdatehub-secret', { required: true });
+    const WPUPDATEHUB_ACTION = (0, core_1.getInput)('wpupdatehub-action');
+    const WPUPDATEHUB_PLUGIN_ID = (0, core_1.getInput)('wpupdatehub-plugin-id');
+    const ARTIFACT_URL = (0, core_1.getInput)('wpupdatehub-artifact-zip-url');
     return {
         ARTIFACT_URL,
         GITHUB_TOKEN,
-        WPLATEST_SECRET,
-        WPLATEST_ACTION,
-        WPLATEST_PLUGIN_ID
+        WPUPDATEHUB_SECRET,
+        WPUPDATEHUB_ACTION,
+        WPUPDATEHUB_PLUGIN_ID
     };
 };
 exports.getWorkflowInput = getWorkflowInput;
@@ -24839,7 +24839,7 @@ const commonHeaders = (secret) => {
     return headers;
 };
 async function createNewVersion(config, { secret }) {
-    return await fetch(`${constants_1.WPLATEST_API_BASE}/plugin/update`, {
+    return await fetch(`${constants_1.WPUPDATEHUB_API_BASE}/plugin/update`, {
         method: 'POST',
         headers: commonHeaders(secret),
         body: JSON.stringify(config)
