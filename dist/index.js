@@ -24708,7 +24708,7 @@ exports["default"] = _default;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.AUTOMAGICWP_API_BASE = void 0;
-exports.AUTOMAGICWP_API_BASE = 'https://automagicwp.com/api/v1';
+exports.AUTOMAGICWP_API_BASE = 'https://www.automagicwp.com/api/v1';
 
 
 /***/ }),

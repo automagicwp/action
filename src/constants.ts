@@ -1,1 +1,1 @@
-export const AUTOMAGICWP_API_BASE = 'https://automagicwp.com/api/v1'
+export const AUTOMAGICWP_API_BASE = 'https://www.automagicwp.com/api/v1'
