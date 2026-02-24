@@ -24812,7 +24812,8 @@ async function uploadZip(presignedUrl, zipBuffer) {
         body: zipBuffer
     });
     if (!response.ok) {
-        throw new Error(`Failed to upload zip (${response.status})`);
+        const text = await response.text();
+        throw new Error(`Failed to upload zip (${response.status}): ${text}`);
     }
 }
 exports.uploadZip = uploadZip;
