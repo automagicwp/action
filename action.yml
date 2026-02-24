@@ -1,33 +1,27 @@
-name: 'WPUpdateHub'
-description: 'This action makes it easy to interact with the WPUpdateHub API.'
-author: 'Chris Jayden'
+name: 'AutomagicWP'
+description: 'Deploy a WordPress plugin to AutomagicWP'
+author: 'AutomagicWP'
 
 branding:
   icon: 'rocket'
   color: 'red'
 
 inputs:
-  'wpupdatehub-secret':
-    description: 'WPUpdateHub API token'
-    required: false
-  'wpupdatehub-action':
-    description: 'WPUpdateHub action'
+  api-key:
+    description: 'AutomagicWP API key'
     required: true
-  'wpupdatehub-plugin-id':
-    description: 'WPUpdateHub plugin id'
+  plugin-id:
+    description: 'AutomagicWP plugin ID'
     required: true
-  'github-token':
-    description: 'GitHub token'
-    required: true
-  'wpupdatehub-artifact-zip-url':
-    description: 'Url to the zip file'
+  zip-path:
+    description: 'Path to the built plugin zip file'
     required: true
 
 outputs:
   version:
-    description: 'WPUpdateHub new plugin version'
+    description: 'Deployed plugin version'
   id:
-    description: 'WPUpdateHub new plugin version id'
+    description: 'New plugin version ID'
 
 runs:
   using: 'node20'

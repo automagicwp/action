@@ -1,2 +1,1 @@
-export const WPUPDATEHUB_ACTIONS = ['create-new-version'] as const
-export const WPUPDATEHUB_API_BASE = 'https://wpupdatehub.com/api/v1'
+export const AUTOMAGICWP_API_BASE = 'https://automagicwp.com/api/v1'

@@ -1,50 +1,66 @@
-import { getInput } from '@actions/core'
-import type {
-  ApiOptions,
-  CreateNewVersionInput,
-  WPUpdateHubAction
-} from './types'
-import { WPUPDATEHUB_API_BASE } from './constants'
+import { AUTOMAGICWP_API_BASE } from './constants'
+import type { UploadUrlResponse, ConfirmUploadResponse } from './types'
 
-export const getWorkflowInput = (): {
-  GITHUB_TOKEN: string
-  WPUPDATEHUB_SECRET: string
-  WPUPDATEHUB_ACTION: WPUpdateHubAction
-  WPUPDATEHUB_PLUGIN_ID: string
-  ARTIFACT_URL: string
-} => {
-  const GITHUB_TOKEN = getInput('github-token')
-  const WPUPDATEHUB_SECRET = getInput('wpupdatehub-secret', { required: true })
-  const WPUPDATEHUB_ACTION = getInput('wpupdatehub-action') as WPUpdateHubAction
-  const WPUPDATEHUB_PLUGIN_ID = getInput('wpupdatehub-plugin-id')
-  const ARTIFACT_URL = getInput('wpupdatehub-artifact-zip-url')
+const commonHeaders = (apiKey: string): Record<string, string> => ({
+  Accept: 'application/json',
+  Authorization: `Bearer ${apiKey}`
+})
 
-  return {
-    ARTIFACT_URL,
-    GITHUB_TOKEN,
-    WPUPDATEHUB_SECRET,
-    WPUPDATEHUB_ACTION,
-    WPUPDATEHUB_PLUGIN_ID
+export async function getUploadUrl(
+  pluginId: string,
+  apiKey: string
+): Promise<UploadUrlResponse> {
+  const url = new URL(`${AUTOMAGICWP_API_BASE}/plugin/update/upload-url`)
+  url.searchParams.set('plugin_id', pluginId)
+
+  const response = await fetch(url.toString(), {
+    method: 'GET',
+    headers: commonHeaders(apiKey)
+  })
+
+  if (!response.ok) {
+    const text = await response.text()
+    throw new Error(`Failed to get upload URL (${response.status}): ${text}`)
+  }
+
+  return response.json() as Promise<UploadUrlResponse>
+}
+
+export async function uploadZip(
+  presignedUrl: string,
+  zipBuffer: ArrayBuffer
+): Promise<void> {
+  const response = await fetch(presignedUrl, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/zip'
+    },
+    body: zipBuffer
+  })
+
+  if (!response.ok) {
+    throw new Error(`Failed to upload zip (${response.status})`)
   }
 }
 
-const commonHeaders = (secret: string) => {
-  const headers = {
-    Accept: 'application/json',
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${secret}`
-  } as Record<string, string>
-
-  return headers
-}
-
-export async function createNewVersion(
-  config: CreateNewVersionInput,
-  { secret }: ApiOptions
-) {
-  return await fetch(`${WPUPDATEHUB_API_BASE}/plugin/update`, {
+export async function confirmUpload(
+  pluginId: string,
+  objectKey: string,
+  apiKey: string
+): Promise<ConfirmUploadResponse> {
+  const response = await fetch(`${AUTOMAGICWP_API_BASE}/plugin/update/confirm`, {
     method: 'POST',
-    headers: commonHeaders(secret),
-    body: JSON.stringify(config)
+    headers: {
+      ...commonHeaders(apiKey),
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ plugin_id: pluginId, objectKey })
   })
+
+  if (!response.ok) {
+    const text = await response.text()
+    throw new Error(`Failed to confirm upload (${response.status}): ${text}`)
+  }
+
+  return response.json() as Promise<ConfirmUploadResponse>
 }

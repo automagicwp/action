@@ -1,81 +1,34 @@
 import * as core from '@actions/core'
-import { WPUPDATEHUB_ACTIONS } from './constants'
-import type {
-  ApiErrorResponse,
-  CreateNewVersionInput,
-  CreateNewVersionResponse
-} from './types'
-import { getWorkflowInput, createNewVersion } from './utils'
+import { readFileSync } from 'fs'
+import { getUploadUrl, uploadZip, confirmUpload } from './utils'
 
-/**
- * The main function for the action.
- * @returns {Promise<void>} Resolves when the action is complete.
- */
 export async function run(): Promise<void> {
   try {
-    const {
-      ARTIFACT_URL,
-      GITHUB_TOKEN,
-      WPUPDATEHUB_SECRET,
-      WPUPDATEHUB_ACTION,
-      WPUPDATEHUB_PLUGIN_ID
-    } = getWorkflowInput()
+    const apiKey = core.getInput('api-key', { required: true })
+    const pluginId = core.getInput('plugin-id', { required: true })
+    const zipPath = core.getInput('zip-path', { required: true })
 
-    if (!WPUPDATEHUB_ACTIONS.includes(WPUPDATEHUB_ACTION)) {
-      core.setFailed(
-        `Invalid action: ${WPUPDATEHUB_ACTION}. Must be one of: ${WPUPDATEHUB_ACTIONS.join(', ')}`
-      )
-      return
-    }
+    core.info(`Deploying plugin ${pluginId} from ${zipPath}`)
 
-    if (WPUPDATEHUB_ACTION === 'create-new-version') {
-      core.info(`Creating new plugin version: ${WPUPDATEHUB_PLUGIN_ID}`)
-      core.info(`Using artifact URL: ${ARTIFACT_URL}`)
+    const zipBuffer = readFileSync(zipPath).buffer as ArrayBuffer
 
-      const config: CreateNewVersionInput = {
-        zip_url: ARTIFACT_URL,
-        plugin_id: WPUPDATEHUB_PLUGIN_ID
-      }
+    core.info('Getting upload URL...')
+    const { presignedUrl, objectKey } = await getUploadUrl(pluginId, apiKey)
 
-      core.info(`Creating new version with config: ${JSON.stringify(config)}`)
+    core.info('Uploading plugin zip...')
+    await uploadZip(presignedUrl, zipBuffer)
 
-      try {
-        const response = await createNewVersion(config, {
-          secret: WPUPDATEHUB_SECRET
-        })
+    core.info('Confirming upload...')
+    const { id, version } = await confirmUpload(pluginId, objectKey, apiKey)
 
-        core.info(`Response status: ${response.status}`)
-
-        if (!response.ok) {
-          const data = (await response.json()) as ApiErrorResponse
-
-          core.setFailed(
-            `Failed to create new version: ${data.message ?? 'No data returned from WPUpdateHub API'}`
-          )
-          return
-        }
-
-        const data = (await response.json()) as CreateNewVersionResponse
-        core.info(`New version created: ${data.id} - ${data.version}`)
-
-        core.setOutput('id', data.id)
-        core.setOutput('version', data.version)
-      } catch (err) {
-        const error = err as Error | unknown
-        let msg = error instanceof Error ? error.message : 'Unknown error'
-
-        // If fetch error, change the msg
-        if (msg.includes('Failed to fetch') || msg.includes('fetch failed')) {
-          const response = err as Response | unknown
-          msg = `Failed to fetch: ${JSON.stringify(response)}`
-        }
-
-        core.setFailed(`Failed to create new version: ${msg}`)
-      }
-    } else {
-      core.setFailed(`${WPUPDATEHUB_ACTION} has not been implemented yet.`)
-    }
+    core.info(`Plugin version ${version} deployed successfully (id: ${id})`)
+    core.setOutput('version', version)
+    core.setOutput('id', id)
   } catch (error) {
-    if (error instanceof Error) core.setFailed(error.message)
+    if (error instanceof Error) {
+      core.setFailed(error.message)
+    } else {
+      core.setFailed('An unexpected error occurred')
+    }
   }
 }
