@@ -48,14 +48,17 @@ export async function confirmUpload(
   objectKey: string,
   apiKey: string
 ): Promise<ConfirmUploadResponse> {
-  const response = await fetch(`${AUTOMAGICWP_API_BASE}/plugin/update/confirm`, {
-    method: 'POST',
-    headers: {
-      ...commonHeaders(apiKey),
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ plugin_id: pluginId, objectKey })
-  })
+  const response = await fetch(
+    `${AUTOMAGICWP_API_BASE}/plugin/update/confirm`,
+    {
+      method: 'POST',
+      headers: {
+        ...commonHeaders(apiKey),
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ plugin_id: pluginId, objectKey })
+    }
+  )
 
   if (!response.ok) {
     const text = await response.text()

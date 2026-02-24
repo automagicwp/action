@@ -24707,9 +24707,8 @@ exports["default"] = _default;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.WPUPDATEHUB_API_BASE = exports.WPUPDATEHUB_ACTIONS = void 0;
-exports.WPUPDATEHUB_ACTIONS = ['create-new-version'];
-exports.WPUPDATEHUB_API_BASE = 'https://wpupdatehub.com/api/v1';
+exports.AUTOMAGICWP_API_BASE = void 0;
+exports.AUTOMAGICWP_API_BASE = 'https://automagicwp.com/api/v1';
 
 
 /***/ }),
@@ -24745,60 +24744,32 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.run = void 0;
 const core = __importStar(__nccwpck_require__(9093));
-const constants_1 = __nccwpck_require__(8926);
+const fs_1 = __nccwpck_require__(7147);
 const utils_1 = __nccwpck_require__(442);
-/**
- * The main function for the action.
- * @returns {Promise<void>} Resolves when the action is complete.
- */
 async function run() {
     try {
-        const { ARTIFACT_URL, GITHUB_TOKEN, WPUPDATEHUB_SECRET, WPUPDATEHUB_ACTION, WPUPDATEHUB_PLUGIN_ID } = (0, utils_1.getWorkflowInput)();
-        if (!constants_1.WPUPDATEHUB_ACTIONS.includes(WPUPDATEHUB_ACTION)) {
-            core.setFailed(`Invalid action: ${WPUPDATEHUB_ACTION}. Must be one of: ${constants_1.WPUPDATEHUB_ACTIONS.join(', ')}`);
-            return;
-        }
-        if (WPUPDATEHUB_ACTION === 'create-new-version') {
-            core.info(`Creating new plugin version: ${WPUPDATEHUB_PLUGIN_ID}`);
-            core.info(`Using artifact URL: ${ARTIFACT_URL}`);
-            const config = {
-                zip_url: ARTIFACT_URL,
-                plugin_id: WPUPDATEHUB_PLUGIN_ID
-            };
-            core.info(`Creating new version with config: ${JSON.stringify(config)}`);
-            try {
-                const response = await (0, utils_1.createNewVersion)(config, {
-                    secret: WPUPDATEHUB_SECRET
-                });
-                core.info(`Response status: ${response.status}`);
-                if (!response.ok) {
-                    const data = (await response.json());
-                    core.setFailed(`Failed to create new version: ${data.message ?? 'No data returned from WPUpdateHub API'}`);
-                    return;
-                }
-                const data = (await response.json());
-                core.info(`New version created: ${data.id} - ${data.version}`);
-                core.setOutput('id', data.id);
-                core.setOutput('version', data.version);
-            }
-            catch (err) {
-                const error = err;
-                let msg = error instanceof Error ? error.message : 'Unknown error';
-                // If fetch error, change the msg
-                if (msg.includes('Failed to fetch') || msg.includes('fetch failed')) {
-                    const response = err;
-                    msg = `Failed to fetch: ${JSON.stringify(response)}`;
-                }
-                core.setFailed(`Failed to create new version: ${msg}`);
-            }
-        }
-        else {
-            core.setFailed(`${WPUPDATEHUB_ACTION} has not been implemented yet.`);
-        }
+        const apiKey = core.getInput('api-key', { required: true });
+        const pluginId = core.getInput('plugin-id', { required: true });
+        const zipPath = core.getInput('zip-path', { required: true });
+        core.info(`Deploying plugin ${pluginId} from ${zipPath}`);
+        const zipBuffer = (0, fs_1.readFileSync)(zipPath).buffer;
+        core.info('Getting upload URL...');
+        const { presignedUrl, objectKey } = await (0, utils_1.getUploadUrl)(pluginId, apiKey);
+        core.info('Uploading plugin zip...');
+        await (0, utils_1.uploadZip)(presignedUrl, zipBuffer);
+        core.info('Confirming upload...');
+        const { id, version } = await (0, utils_1.confirmUpload)(pluginId, objectKey, apiKey);
+        core.info(`Plugin version ${version} deployed successfully (id: ${id})`);
+        core.setOutput('version', version);
+        core.setOutput('id', id);
     }
     catch (error) {
-        if (error instanceof Error)
+        if (error instanceof Error) {
             core.setFailed(error.message);
+        }
+        else {
+            core.setFailed('An unexpected error occurred');
+        }
     }
 }
 exports.run = run;
@@ -24812,40 +24783,55 @@ exports.run = run;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.createNewVersion = exports.getWorkflowInput = void 0;
-const core_1 = __nccwpck_require__(9093);
+exports.confirmUpload = exports.uploadZip = exports.getUploadUrl = void 0;
 const constants_1 = __nccwpck_require__(8926);
-const getWorkflowInput = () => {
-    const GITHUB_TOKEN = (0, core_1.getInput)('github-token');
-    const WPUPDATEHUB_SECRET = (0, core_1.getInput)('wpupdatehub-secret', { required: true });
-    const WPUPDATEHUB_ACTION = (0, core_1.getInput)('wpupdatehub-action');
-    const WPUPDATEHUB_PLUGIN_ID = (0, core_1.getInput)('wpupdatehub-plugin-id');
-    const ARTIFACT_URL = (0, core_1.getInput)('wpupdatehub-artifact-zip-url');
-    return {
-        ARTIFACT_URL,
-        GITHUB_TOKEN,
-        WPUPDATEHUB_SECRET,
-        WPUPDATEHUB_ACTION,
-        WPUPDATEHUB_PLUGIN_ID
-    };
-};
-exports.getWorkflowInput = getWorkflowInput;
-const commonHeaders = (secret) => {
-    const headers = {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${secret}`
-    };
-    return headers;
-};
-async function createNewVersion(config, { secret }) {
-    return await fetch(`${constants_1.WPUPDATEHUB_API_BASE}/plugin/update`, {
-        method: 'POST',
-        headers: commonHeaders(secret),
-        body: JSON.stringify(config)
+const commonHeaders = (apiKey) => ({
+    Accept: 'application/json',
+    Authorization: `Bearer ${apiKey}`
+});
+async function getUploadUrl(pluginId, apiKey) {
+    const url = new URL(`${constants_1.AUTOMAGICWP_API_BASE}/plugin/update/upload-url`);
+    url.searchParams.set('plugin_id', pluginId);
+    const response = await fetch(url.toString(), {
+        method: 'GET',
+        headers: commonHeaders(apiKey)
     });
+    if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`Failed to get upload URL (${response.status}): ${text}`);
+    }
+    return response.json();
 }
-exports.createNewVersion = createNewVersion;
+exports.getUploadUrl = getUploadUrl;
+async function uploadZip(presignedUrl, zipBuffer) {
+    const response = await fetch(presignedUrl, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/zip'
+        },
+        body: zipBuffer
+    });
+    if (!response.ok) {
+        throw new Error(`Failed to upload zip (${response.status})`);
+    }
+}
+exports.uploadZip = uploadZip;
+async function confirmUpload(pluginId, objectKey, apiKey) {
+    const response = await fetch(`${constants_1.AUTOMAGICWP_API_BASE}/plugin/update/confirm`, {
+        method: 'POST',
+        headers: {
+            ...commonHeaders(apiKey),
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ plugin_id: pluginId, objectKey })
+    });
+    if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`Failed to confirm upload (${response.status}): ${text}`);
+    }
+    return response.json();
+}
+exports.confirmUpload = confirmUpload;
 
 
 /***/ }),
